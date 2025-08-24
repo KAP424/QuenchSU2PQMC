@@ -1,0 +1,67 @@
+
+struct _Quench_Hubbard
+    Lattice::String
+    t::Float64
+    U::Vector{Float64}
+    Rate::Float64
+    site::Vector{Int64}
+    Θ::Float64
+    Ns::Int64
+    Nt::Int64
+    K::Array{Float64,2}
+    BatchSize::Int64
+    WrapTime::Int64
+    Δt::Float64
+    α::Vector{Float64}
+    γ::Vector{Float64}
+    η::Vector{Float64}
+    Pt::Array{Float64,2}
+    HalfeK::Array{Float64,2}
+    eK::Array{Float64,2}
+    HalfeKinv::Array{Float64,2}
+    eKinv::Array{Float64,2}
+end
+
+function Quench_Hubbard(t,Rate,Lattice::String,site,Δt,Θ,BatchSize)
+    Nt::Int64=2*cld(Θ,Δt)
+    WrapTime::Int64=div(BatchSize,2)
+    
+    γ::Vector{Float64}=[1+sqrt(6)/3,1+sqrt(6)/3,1-sqrt(6)/3,1-sqrt(6)/3]
+    η::Vector{Float64}=[sqrt(2*(3-sqrt(6))),-sqrt(2*(3-sqrt(6))),sqrt(2*(3+sqrt(6))),-sqrt(2*(3+sqrt(6)))]
+    
+    K::Array{Float64,2}=t.*K_Matrix(Lattice,site)
+    Ns::Int64=size(K)[1]
+
+    μ=0.0
+    if Lattice=="HoneyComb"
+        K+=μ*diagm(repeat([-1, 1], div(Ns, 2)))
+    elseif Lattice=="SQUARE"
+        for i in 1:Ns
+            x,y=i_xy(Lattice,site,i)
+            K[i,i]+=μ*(-1)^(x+y)
+        end
+    end
+    # K[K .!= 0] .+=( rand(size(K)...) * 0.1)[K.!= 0]
+    # K=(K+K')./2
+
+    E,V=eigen(K)
+    
+    HalfeK::Array{Float64,2}=V*diagm(exp.(-Δt.*E./2))*V'
+    eK::Array{Float64,2}=V*diagm(exp.(-Δt.*E))*V'
+    HalfeKinv::Array{Float64,2}=V*diagm(exp.(Δt.*E./2))*V'
+    eKinv::Array{Float64,2}=V*diagm(exp.(Δt.*E))*V'
+
+    # 从无序费米液体基态-->反铁磁序直积态
+    # U:0->Θ*Rate
+    Pt=V[:,1:div(Ns,2)]
+
+    α=zeros(Nt)
+    U=vcat(collect(cld(Θ,Δt):-1:1),collect(1:1:cld(Θ,Δt)))*Δt*Rate
+    for i in 1:Nt
+        α[i]=sqrt(Δt*U[i]/2)
+    end
+
+    return _Quench_Hubbard(Lattice,t,U,Rate,site,Θ,Ns,Nt,K,BatchSize,WrapTime,Δt,α,γ,η,Pt,HalfeK,eK,HalfeKinv,eKinv)
+
+end
+
