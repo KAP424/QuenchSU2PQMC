@@ -1,7 +1,6 @@
 # 2d Trotter Decomposition
 
-function Initial_s(model::_Quench_Hubbard,rng::MersenneTwister)::Array{UInt8,2}
-    rng=MersenneTwister(12)
+function Initial_s(model::_Hubbard_Para,rng::MersenneTwister)::Array{UInt8,2}
     sp=Random.Sampler(rng,[1,2,3,4])
 
     s::Array{UInt8,2}=zeros(model.Ns,model.Nt)
@@ -18,7 +17,7 @@ end
 
 
 "equal time Green function"
-function Gτ(model::_Quench_Hubbard,s::Array{UInt8,2},τ::Int64)::Array{ComplexF64,2}
+function Gτ(model::_Hubbard_Para,s::Array{UInt8,2},τ::Int64)::Array{ComplexF64,2}
     BL::Array{ComplexF64,2}=model.Pt'[:,:]
     BR::Array{ComplexF64,2}=model.Pt[:,:]
 
@@ -51,7 +50,7 @@ end
 
 
 "displaced Green function G(τ₁,τ₂)"
-function G4(model::_Quench_Hubbard,s::Array{UInt8,2},τ1::Int64,τ2::Int64)
+function G4(model::_Hubbard_Para,s::Array{UInt8,2},τ1::Int64,τ2::Int64)
     if τ1>τ2
         BBs=zeros(ComplexF64,cld(τ1-τ2,model.BatchSize),model.Ns,model.Ns)
         BBsInv=zeros(ComplexF64,size(BBs))
@@ -94,8 +93,8 @@ function G4(model::_Quench_Hubbard,s::Array{UInt8,2},τ1::Int64,τ2::Int64)
             BBsInv[i,:,:]=I(model.Ns)
             for j in 1:model.BatchSize
                 D=[model.η[x] for x in s[:,τ2+(i-1)*model.BatchSize+j]]
-                BBs[i,:,:]=diagm(exp.(1im*model.α[i].*D))*model.eK*BBs[i,:,:]
-                BBsInv[i,:,:]=BBsInv[i,:,:]*model.eKinv*diagm(exp.(-1im*model.α[i].*D))
+                BBs[i,:,:]=diagm(exp.(1im*model.α[τ2+(i-1)*model.BatchSize+j].*D))*model.eK*BBs[i,:,:]
+                BBsInv[i,:,:]=BBsInv[i,:,:]*model.eKinv*diagm(exp.(-1im*model.α[τ2+(i-1)*model.BatchSize+j].*D))
             end
         end
     
@@ -114,6 +113,7 @@ function G4(model::_Quench_Hubbard,s::Array{UInt8,2},τ1::Int64,τ2::Int64)
     
         for i in 1:size(G)[1]
             G[i,:,:]=I(model.Ns)-UR[i,:,:]*inv(UL[i,:,:]*UR[i,:,:])*UL[i,:,:]
+            #####################################################################
             # if i <size(G)[1]
             #     if norm(Gτ(model,s,τ2+(i-1)*model.BatchSize)-G[i,:,:])>1e-3
             #         error("$i Gt")
@@ -123,6 +123,7 @@ function G4(model::_Quench_Hubbard,s::Array{UInt8,2},τ1::Int64,τ2::Int64)
             #         error("$i Gt")
             #     end
             # end
+            #####################################################################
         end
 
         G12=I(model.Ns)

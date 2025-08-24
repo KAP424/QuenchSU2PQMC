@@ -12,7 +12,7 @@
 #     end
 # end
 
-function ctrl_EEicr(path::String,model::_Quench_Hubbard,index::Vector{Int64},Sweeps::Int64,λ::Float64,Nλ::Int64,ss::Vector{Matrix{UInt8}},record)::Vector{Matrix{UInt8}}
+function ctrl_EEicr(path::String,model::_Hubbard_Para,index::Vector{Int64},Sweeps::Int64,λ::Float64,Nλ::Int64,ss::Vector{Matrix{UInt8}},record)::Vector{Matrix{UInt8}}
     if model.Lattice=="SQUARE"
         name="□"
     elseif model.Lattice=="HoneyComb"
@@ -75,7 +75,8 @@ function ctrl_EEicr(path::String,model::_Quench_Hubbard,index::Vector{Int64},Swe
                 Gt01=diagm(exp.(1im*model.α[lt].*D1))*model.eK*Gt01
                 Gt02=diagm(exp.(1im*model.α[lt].*D2))*model.eK*Gt02
 
-                #####################################################################
+                #############################
+                ########################################
                 # Gt1_,G01_,Gt01_,G0t1_=G4(model,ss[1],lt,div(model.Nt,2))
                 # Gt2_,G02_,Gt02_,G0t2_=G4(model,ss[2],lt,div(model.Nt,2))
                     

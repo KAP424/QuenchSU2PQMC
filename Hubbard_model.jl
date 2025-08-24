@@ -1,11 +1,10 @@
 
-struct _Quench_Hubbard
+struct _Hubbard_Para
     Lattice::String
     t::Float64
     U::Vector{Float64}
     Rate::Float64
     site::Vector{Int64}
-    Θ::Float64
     Ns::Int64
     Nt::Int64
     K::Array{Float64,2}
@@ -22,8 +21,15 @@ struct _Quench_Hubbard
     eKinv::Array{Float64,2}
 end
 
-function Quench_Hubbard(t,Rate,Lattice::String,site,Δt,Θ,BatchSize)
-    Nt::Int64=2*cld(Θ,Δt)
+function Hubbard_Para(t,U0,Uend,Rate,Lattice::String,site,Δt,BatchSize)
+    Nt::Int64=2*Int(round((Uend-U0)/Δt*Rate))
+    U=U0.+vcat( collect(1:cld(Nt,2)),collect(cld(Nt,2):-1:1) ).*Rate*Δt
+    
+    α=zeros(Nt)
+    for i in 1:Nt
+        α[i]=sqrt(Δt*U[i]/2)
+    end
+
     WrapTime::Int64=div(BatchSize,2)
     
     γ::Vector{Float64}=[1+sqrt(6)/3,1+sqrt(6)/3,1-sqrt(6)/3,1-sqrt(6)/3]
@@ -54,14 +60,9 @@ function Quench_Hubbard(t,Rate,Lattice::String,site,Δt,Θ,BatchSize)
     # 从无序费米液体基态-->反铁磁序直积态
     # U:0->Θ*Rate
     Pt=V[:,1:div(Ns,2)]
+    
 
-    α=zeros(Nt)
-    U=vcat(collect(cld(Θ,Δt):-1:1),collect(1:1:cld(Θ,Δt)))*Δt*Rate
-    for i in 1:Nt
-        α[i]=sqrt(Δt*U[i]/2)
-    end
-
-    return _Quench_Hubbard(Lattice,t,U,Rate,site,Θ,Ns,Nt,K,BatchSize,WrapTime,Δt,α,γ,η,Pt,HalfeK,eK,HalfeKinv,eKinv)
+    return _Hubbard_Para(Lattice,t,U,Rate,site,Ns,Nt,K,BatchSize,WrapTime,Δt,α,γ,η,Pt,HalfeK,eK,HalfeKinv,eKinv)
 
 end
 
